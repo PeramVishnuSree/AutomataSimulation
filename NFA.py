@@ -3,14 +3,20 @@ class State:
         if type(name) != str:
             print ("state name must be a string")
             return None
-        self.name = name
-        self.transitions = {}
+        self.name = name #string
+        self.transitions = {} #dictionary of alphabet: [States]
         self.accept = False
         self.start = False
 
 class CreateAutomata:
     # updates all the nodes and returns start, accept and transition functions
     def __init__(self, file_path):
+        #self.currentStates: list of the states that are active
+        #self.alphabet: string of alphabet
+        #self.states: list of all the states
+        #self.acceptStates: list of all the states that accept an input
+        #self.startState: startState 
+        self.currentSates = [] # list of all the states the NFA or DFA is active in
         file = open(file_path, "r")
         lines = file.readlines()
         file.close()
@@ -56,7 +62,7 @@ class CreateAutomata:
                         s.transitions[alphabet] = [toState]
                         break
                     else:
-                        s[alphabet].append(toState)
+                        s.transitions[alphabet].append(toState)
                         break
 
     def getStartState(self):
@@ -70,3 +76,40 @@ class CreateAutomata:
     
     def getStates(self):
         return self.states
+    
+    def decideString(self, string):
+        string = string.strip()
+        self.currentSates.append(self.startState)
+        for tran, stats in self.startState.transitions.items():
+            if tran == 'EPSILON':
+                self.currentSates += stats
+        for i in range(len(string)):
+            print(string, [s.name for s in self.currentSates])
+            if len(self.currentSates) == 0:
+                self.currentSates = []
+                return False
+            
+            #update current state for each character
+            for j in range(len(self.currentSates)):
+                if string[i] in self.currentSates[0].transitions:
+                    curTransitions = self.currentSates[0].transitions[string[i]]
+                    self.currentSates += curTransitions
+                    for trans in curTransitions:
+                        if 'EPSILON' in trans.transitions:
+                            self.currentSates += trans.transitions['EPSILON']
+                    self.currentSates.pop(0)
+                elif 'EPSILON' in self.currentSates[0].transitions:
+                    self.currentSates += self.currentSates[0].transitions['EPSILON']
+                    self.currentSates.pop(0)
+                else: 
+                    self.currentSates.pop(0)
+
+        if len(self.currentSates) != 0:
+            for state in self.currentSates:
+                print("final print:", [stat.name for stat in self.currentSates]) #printing
+                if state.accept == True:
+                    self.currentSates = []
+                    return True
+                
+        self.currentSates = []
+        return False
